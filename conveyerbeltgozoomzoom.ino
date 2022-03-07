@@ -16,3 +16,7 @@ void loop() {
   servoLeft.write(0);
   servoRight.write(0);                       // wait for a second
 }
+
+
+//program for 2 motors to run (this used to be code for a prototype conveyor belt to prove chels wrong)
+//bc she thought that it wasnt possible to make one

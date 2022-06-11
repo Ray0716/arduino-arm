@@ -3,8 +3,9 @@
 
 //config : arduino uno bluetooth tx 12
 //                               rx 13
-//                  right servo pin 10
-//                   left servo pin 7
+//                  NODE1 servo pin 10
+//             NODE1 PRIME servo pin 7
+//.                NODETWO servo pin 8?
 //                          joystick x pin A0
 //                          joystick y pin A1
 //                          button out pin A5
@@ -14,16 +15,17 @@
 #include <Servo.h>
 
 #include <ArduinoBlue.h>
-int motor1Pin = 3; // H-bridge leg 1
-int motor2Pin = 4; // H-bridge leg 2
-int speedPin = 5; // H-bridge enable pin
+int right_sen = 0.8;
+
 int speed;
-int sensitivity = 7.95;
+int sensitivity = 5;   // higher values decrease sensitivity, lower values increase, 1 is max (straight 0 to 180 for servo with no scaling)
 int servo = 8; 
 int count = 90;
 
 int node_oneVal = 90; //determines the value for nodeone servo it wrotes at beginning of each main loop
 int node_one_primeVal = 90;
+int node_twoVal = 90;
+
 
 int d_padPin = A5; //testing for joystick and dpad
 int joystickX = A0;
@@ -31,6 +33,7 @@ int joystickY = A1;
 
 Servo node_one;
 Servo node_one_prime;
+Servo node_two;
 
 const int BLUETOOTH_TX_PIN = 12;
 const int BLUETOOTH_RX_PIN = 13;
@@ -52,22 +55,25 @@ void setup()
 Serial.begin(9600);
 bluetooth.begin(9600);
 delay(100);
-pinMode(motor1Pin, OUTPUT);
-pinMode(motor2Pin, OUTPUT);
-pinMode(speedPin, OUTPUT);
+
 
 
 
 
 node_one.attach(10); //attaching 1st rotation  servo to pin 10
 node_one_prime.attach(7);
+node_two.attach(6);
 
 node_one.write(90);
 node_one_prime.write(90);
-
+node_two.write(90);
+TIMSK0=0;
 
 }
 
+
+
+//--------------------------------------------------------------------------------------------
 
 
 void loop() 
@@ -75,6 +81,7 @@ void loop()
   
 node_one.write(node_oneVal);
 node_one_prime.write(node_one_primeVal);
+node_two.write(node_twoVal);
 
 int d_padVal = analogRead(d_padPin);
 int joystickXVal = analogRead(joystickX);
@@ -85,26 +92,40 @@ int joystickYVal = analogRead(joystickY);
 Serial.print(joystickXVal);
 Serial.print(" | ");
 Serial.print(joystickYVal);
-Serial.print("         ");//suppposd to print "     dpadvl"
+Serial.print("       N1 ");//suppposd to print "     dpadvl"
+Serial.print(node_oneVal);
+Serial.print("      N1' ");
+Serial.print(node_one_primeVal);
+Serial.print("       N2 ");
+Serial.print(node_twoVal);
+Serial.print("     D_PAD - ");
+Serial.print(d_padVal);
+Serial.print("     SEN: ");
+Serial.print(sensitivity);
 
 
-if (joystickXVal != 480 or joystickXVal != 481 or joystickXVal != 482){ // if x axis of joystick is not moving the motor stays still
+// 475 - 485
+if (joystickXVal < 458 or joystickXVal > 518){ // if x axis of joystick is NOT moving the motor stays still    JOYSTICK X
   
-  if (joystickXVal >= 480){ // if joystick is moved right
+  if (joystickXVal >= 481){ // if joystick is moved right
     //node_one.write(((971-joystickXVal)/5.444444444)+90); // get x value starting from 0 to 490 (onleft side) then map it for servo
-    Serial.print(round((0 + (490-(971-joystickXVal))/5.444444444)/8)+90);//((971-joystickXVal)/5.444444444));
+    //Serial.print(round(joystickXVal / 5.44)); //((971-joystickXVal)/5.444444444));
+    int a = round((joystickXVal / 5.44)-90);  
     
-    node_oneVal = (round((0 + (490-(971-joystickXVal))/5.444444444)/8)+90);
-    node_one_primeVal = 80;
+    node_oneVal = (90+(a/ (sensitivity)));
+
+    node_one_primeVal = (90-(a/(sensitivity)));
   }
 
   
-  if (joystickXVal <= 479){ //if joystick moved left
+  if (joystickXVal <= 469){ //if joystick moved left
     //node_one.write((971-joystickXVal)/5.444444444444);
-    Serial.print(round((0 + (490-(971-joystickXVal))/5.444444444)/8)+90);
+    //Serial.print(round((0 + (475-(971-joystickXVal))/5.4)/8)+90);
+    int a = round(90-(joystickXVal / 5.44));
+
+    node_oneVal = (90-(a/sensitivity));
     
-    node_oneVal = (round((0 + (490-(971-joystickXVal))/5.444444444)/8)+90);
-    node_one_primeVal = 96;
+    node_one_primeVal = (90+(a/sensitivity));
 
     //node_oneVal = 40;
    // node_one.write(40);
@@ -115,8 +136,48 @@ if (joystickXVal != 480 or joystickXVal != 481 or joystickXVal != 482){ // if x 
 }
 
 
-if (joystickXVal == 475 or joystickXVal == 476 or joystickXVal == 477 or joystickXVal == 478 or joystickXVal == 479  or joystickXVal == 480  or joystickXVal == 481 or joystickXVal == 482 or joystickXVal == 483 or joystickXVal == 484 or joystickXVal == 485){
-  node_one.write(90);
+
+//                                                                       JOYSTICK Y
+
+if (joystickYVal < 458 or joystickYVal > 528){ // if Y axis of joystick is NOT moving the motor stays still
+  
+  if (joystickYVal >= 481){ // if joystick is moved up
+    //node_one.write(((971-joystickXVal)/5.444444444)+90); // get x value starting from 0 to 490 (onleft side) then map it for servo
+    //Serial.print(round(joystickXVal / 5.44)); //((971-joystickXVal)/5.444444444));
+    int a = round((joystickYVal / 5.44)-90);  
+    
+    node_twoVal = (90+(a/ (1)));
+
+    //node_one_primeVal = (90-(a/(sensitivity)));
+  }
+
+  
+  if (joystickYVal <= 469){ //if joystick moved down
+    //node_one.write((971-joystickXVal)/5.444444444444);
+    //Serial.print(round((0 + (475-(971-joystickXVal))/5.4)/8)+90);
+    int a = round(90-(joystickYVal / 5.44));
+
+    node_twoVal = (90-(a/1));
+    
+    //node_one_primeVal = (90+(a/sensitivity));
+
+    //node_oneVal = 40;
+   // node_one.write(40);
+    
+  }
+
+  
+}
+
+
+
+
+
+
+// if joystick is in rest position
+
+if (joystickXVal >= 457 and joystickXVal<= 517){
+  node_one.write(90);                            // UNCOMMENT THIS WHEN DONE WITH TESTING VERY VERY IMPORTANT 
   node_one_prime.write(90);
 
   node_one_primeVal = 90;
@@ -126,22 +187,35 @@ if (joystickXVal == 475 or joystickXVal == 476 or joystickXVal == 477 or joystic
 
 
 
-
-
-
-if (d_padVal == 0 or d_padVal == 1){
-  Serial.print("left");
+if (joystickYVal >= 457 and joystickYVal<= 527){
+  node_two.write(90);                            // UNCOMMENT THIS WHEN DONE WITH TESTING VERY VERY IMPORTANT 
+ 
+  node_twoVal = 90;
+  //Serial.print("0");
 }
-if (d_padVal == 485 or d_padVal == 484 or d_padVal == 483 or d_padVal == 486 or d_padVal == 487 or d_padVal == 488 or d_padVal == 499 or d_padVal == 500){
+
+
+
+
+
+
+
+if (d_padVal == 0 or d_padVal == 1 or d_padVal == 2){
+  Serial.print("left");
+  sensitivity += 1;
+  delay(50000);
+}
+if (d_padVal > 465 and d_padVal < 550){
   Serial.print("up");
 }
 
-if (d_padVal == 647 or d_padVal == 646 or d_padVal == 648){
-
+if (d_padVal > 616 and d_padVal < 719){
   Serial.print("right");
+  sensitivity -= 1;
+  delay(50000);
 }
 
-if (d_padVal == 728 or d_padVal == 727 or d_padVal == 726 or d_padVal == 729 or d_padVal == 730){
+if (d_padVal > 721 and d_padVal < 776){
 
   Serial.print("down");
 }
@@ -149,10 +223,10 @@ if (d_padVal == 728 or d_padVal == 727 or d_padVal == 726 or d_padVal == 729 or 
 
 
 
-
+/*
 Serial.print("      ");
 Serial.print(d_padVal);
-   
+*/
 Serial.println(" ");
 
 
@@ -169,8 +243,7 @@ int button = phone.getButton();
 //code for motor move one side to hter, servo motor go from 0 to 180 degreea
 //if (button == 0){
 
-
-  if (button == 0){
+if (button == 0){
     count = 1;
     
     for(count = 1; count <= 180; ++count){

@@ -1,4 +1,4 @@
-# a bluetooth arm controlled by arduino
+# an arm controlled by arduino
 
 Specs -----------  
 
